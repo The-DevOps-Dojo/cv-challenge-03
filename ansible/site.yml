@@ -1,0 +1,12 @@
+- name: Configure Ansible server
+  hosts: all     
+  become: yes
+  become_user: root
+  gather_facts: yes
+  vars:
+    project_root: /opt/devops_project
+  roles:
+    - common
+    - docker
+    - application
+    - monitoring   

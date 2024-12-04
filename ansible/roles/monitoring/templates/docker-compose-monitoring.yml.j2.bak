@@ -1,0 +1,67 @@
+services:
+# Monitoring Stack Services
+  prometheus:
+    image: prom/prometheus
+    ports:
+      - "9090:9090"
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--web.external-url=/prometheus'
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - shared_network
+    depends_on:
+      - cadvisor
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SERVER_ROOT_URL=http://localhost:3000/grafana
+      - GF_SERVER_SERVE_FROM_SUB_PATH=true
+    volumes:
+      - grafana:/var/lib/grafana
+    networks:
+      - shared_network
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.47.0
+    ports:
+      - "8081:8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:rw
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    networks:
+      - shared_network
+    privileged: true
+    restart: unless-stopped
+
+  loki:
+    image: grafana/loki:latest
+    ports:
+      - 3100:3100
+    volumes:
+      - ./monitoring/loki-config.yml:/etc/loki/loki-config.yaml
+    networks:
+      - shared_network
+  promtail:
+    image: grafana/promtail:latest
+    networks:
+      - shared_network
+    volumes:
+      - ./monitoring/promtail-config.yml:/etc/promtail/promtail-config.yaml
+      - /var/log:/var/log
+    depends_on:
+      - loki
+
+networks:
+  shared_network:
+    driver: bridge
+
+volumes:
+  grafana:
+    driver: local

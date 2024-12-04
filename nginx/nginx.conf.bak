@@ -1,0 +1,147 @@
+events {
+    worker_connections 1024;
+}
+
+http {
+    # Redirect all HTTP traffic to HTTPS
+    server {
+        listen 80;
+        server_name mytoolings.xyz;
+
+        # Redirect to HTTPS for all other requests
+        location / {
+            return 301 https://$host$request_uri;
+        }
+    }
+
+    # HTTPS Server for mytoolings.xyz
+    server {
+        listen 443 ssl;
+        server_name mytoolings.xyz;
+
+        # SSL configuration (use the paths where Certbot will store the certificates)
+        ssl_certificate /etc/letsencrypt/live/mytoolings.xyz/fullchain.pem;
+        ssl_certificate_key /etc/letsencrypt/live/mytoolings.xyz/privkey.pem;
+
+        location / {
+            proxy_pass http://frontend:5173;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+
+        location /api {
+            proxy_pass http://backend:8000;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+
+        location /docs {
+            proxy_pass http://backend:8000;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+
+        location /grafana {
+            proxy_pass http://grafana:3000;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+
+        location /prometheus {
+            proxy_pass http://prometheus:9090;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+    }
+
+    server {
+        listen 8090;
+        location / {
+            proxy_pass http://proxy:8090;
+        }
+    }
+
+    server {
+        listen 80;
+        server_name db.mytoolings.xyz;
+        location / {
+            proxy_pass http://adminer:8080;
+        }
+    }
+}
+
+
+; events {
+;     worker_connections 1024;
+; }
+
+; http {
+
+;      server {
+;         listen 80;
+;         server_name mytoolings.xyz;
+;         location / {
+;             proxy_pass http://frontend:5173;
+;             proxy_set_header Host $host;
+;             proxy_set_header X-Real-IP $remote_addr;
+;             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+;             proxy_set_header X-Forwarded-Proto $scheme;
+;         }
+
+;         location /api {
+;             proxy_pass http://backend:8000;
+;             proxy_set_header Host $host;
+;             proxy_set_header X-Real-IP $remote_addr;
+;             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+;             proxy_set_header X-Forwarded-Proto $scheme;
+;         }
+
+;         location /docs {
+;             proxy_pass http://backend:8000;
+;             proxy_set_header Host $host;
+;             proxy_set_header X-Real-IP $remote_addr;
+;             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+;             proxy_set_header X-Forwarded-Proto $scheme;
+;         }
+
+;         location /grafana {
+;             proxy_pass http://grafana:3000;
+;             proxy_set_header Host $host;
+;             proxy_set_header X-Real-IP $remote_addr;
+;             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+;             proxy_set_header X-Forwarded-Proto $scheme;
+;         }
+
+;         location /prometheus {
+;             proxy_pass http://prometheus:9090;
+;             proxy_set_header Host $host;
+;             proxy_set_header X-Real-IP $remote_addr;
+;             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+;             proxy_set_header X-Forwarded-Proto $scheme;
+;         }
+;     }
+;     server {
+;         listen 8090;
+;         location / {
+;             proxy_pass http://proxy:8090;
+;         }
+;     }
+
+;     server {
+;         listen 80;
+;         server_name db.mytoolings.xyz;
+;         location / {
+;             proxy_pass http://adminer:8080;
+;         }
+;     }
+; }
