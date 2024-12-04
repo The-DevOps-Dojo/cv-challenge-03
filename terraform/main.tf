@@ -3,11 +3,11 @@ provider "aws" {
 }
 
 module "vpc" {
-  source               = "./modules/vpc"
-  vpc_cidr             = var.vpc_cidr
-  public_subnet_cidrs  = var.public_subnet_cidrs
-  availability_zones   = var.availability_zones
-  environment          = var.environment
+  source              = "./modules/vpc"
+  vpc_cidr            = var.vpc_cidr
+  public_subnet_cidrs = var.public_subnet_cidrs
+  availability_zones  = var.availability_zones
+  environment         = var.environment
 }
 
 module "security" {
@@ -21,12 +21,12 @@ module "security" {
 module "ec2_instance" {
   source = "./modules/ec2" # Path to your module folder
 
-  ubuntu_ami          = var.ubuntu_ami
-  instance_type       = var.instance_type
-  public_subnet_ids   = module.vpc.public_subnet_ids
-  security_group_id   = module.security.ansible_sg_id
-  key_name            = var.key_name
-  environment         = var.environment
+  ubuntu_ami        = var.ubuntu_ami
+  instance_type     = var.instance_type
+  public_subnet_ids = module.vpc.public_subnet_ids
+  security_group_id = module.security.ansible_sg_id
+  key_name          = var.key_name
+  environment       = var.environment
 }
 
 data "aws_route53_zone" "domain" {
@@ -77,8 +77,8 @@ resource "aws_route53_record" "www_routes" {
 resource "local_file" "ansible_inventory" {
   content = templatefile("${path.module}/templates/inventory.tmpl",
     {
-      master_public_ip  = module.ec2_instance.public_ip
-      master_hostname   = module.ec2_instance.master_hostname
+      master_public_ip = module.ec2_instance.public_ip
+      master_hostname  = module.ec2_instance.master_hostname
     }
   )
   filename = "../ansible/inventory.ini"
