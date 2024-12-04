@@ -23,7 +23,7 @@ environment = "dev"
 ubuntu_ami = "ami-04552bb4f4dd38925"
 
 # EC2 Instance Type
-instance_type = "t2.small"
+instance_type = "t2.micro"
 
 # EC2 Key Pair Name
 key_name = "ec2-key"
