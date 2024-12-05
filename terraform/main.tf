@@ -5,8 +5,8 @@ provider "aws" {
 module "vpc" {
   source              = "./modules/vpc"
   vpc_cidr            = var.vpc_cidr
-  public_subnet_cidrs = var.public_subnet_cidrs
-  availability_zones  = var.availability_zones
+  public_subnet_cidrs = ["10.0.1.0/24", "10.0.2.0/24"]
+  availability_zones  = ["us-east-1a", "us-east-1b"]
   environment         = var.environment
 }
 
@@ -23,7 +23,7 @@ module "ec2_instance" {
 
   ubuntu_ami        = var.ubuntu_ami
   instance_type     = var.instance_type
-  public_subnet_ids = module.vpc.public_subnet_ids
+  public_subnet_ids = ["10.0.1.0/24", "10.0.2.0/24"]
   security_group_id = module.security.ansible_sg_id
   key_name          = var.key_name
   environment       = var.environment

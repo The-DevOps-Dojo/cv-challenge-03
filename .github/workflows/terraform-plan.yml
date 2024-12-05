@@ -1,0 +1,121 @@
+name: Terraform Plan
+
+on:
+  pull_request: 
+    branches: [main]
+
+permissions: 
+  pull-requests: write
+      
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0    # Fetch all history for .GitInfo and .Lastmod
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.9.4
+          terraform_wrapper: true
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1  # Adjust to your AWS region
+
+      - name: Terraform Init
+        id: init
+        run: terraform init
+
+      - name: Terraform Format
+        id: fmt
+        run: terraform fmt -check
+
+      - name: Terraform Validate
+        id: validate
+        run: terraform validate -no-color
+        
+      - name: Terraform Plan
+        id: plan
+        env:
+          TF_VAR_aws_region: "us-east-1"
+          TF_VAR_vpc_cidr: "10.0.0.0/16"
+          TF_VAR_environment: "dev"
+          TF_VAR_ami_id: "ami-04552bb4f4dd38925"
+          TF_VAR_instance_type: "t2.micro"
+          TF_VAR_key_name: "ec2-key"
+          TF_VAR_domain_name: "mytoolings.xyz"
+        run: |
+          terraform plan -no-color \
+          -var="aws_region=us-east-1" \
+          -var="vpc_cidr=10.0.0.0/16" \
+          -var="environment=dev" \
+          -var="ami_id=ami-04552bb4f4dd38925" \
+          -var="instance_type=t2.micro" \
+          -var="key_name=ec2-key" \
+          -var="domain_name=mytoolings.xyz" \
+          -input=false | tee plan.txt
+          exit ${PIPESTATUS[0]}
+
+      - name: Setup Infracost
+        uses: infracost/actions/setup@v2
+        with:
+          api-key: ${{ secrets.INFRACOST_API_KEY }}
+  
+      - name: Generate Infracost Report
+        run: |
+          infracost breakdown --path=plan.json \
+            --format=json \
+            --out-file=infracost.json
+          infracost breakdown --path=plan.json \
+            --format=table > infracost.txt
+
+      - name: Update Pull Request
+        uses: actions/github-script@v6
+        if: github.event_name == 'pull_request'
+        env:
+          PLAN: ${{ steps.plan.outputs.stdout }}
+        with:
+          github-token: ${{ secrets.GH_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const plan = fs.readFileSync('plan.txt', 'utf8');
+            const infracost = fs.readFileSync('infracost.txt', 'utf8');
+            
+            const output = `#### Terraform Format and Style 🖌\`${{ steps.fmt.outcome }}\`
+            #### Terraform Initialization ⚙️\`${{ steps.init.outcome }}\`
+            #### Terraform Validation 🤖\`${{ steps.validate.outcome }}\`
+            #### Terraform Plan 📖\`${{ steps.plan.outcome }}\`
+            
+            <details><summary>Show Plan</summary>
+            
+            \`\`\`hcl
+            ${plan}
+            \`\`\`
+            
+            </details>
+            
+            #### Infracost Breakdown 💰
+            \`\`\`
+            ${infracost}
+            \`\`\`
+            
+            *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            })
+
+      - name: Terraform Plan Status
+        if: steps.plan.outcome == 'failure'
+        run: exit 1

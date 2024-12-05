@@ -11,18 +11,6 @@ variable "vpc_cidr" {
   type        = string
 }
 
-# Public Subnet CIDRs
-variable "public_subnet_cidrs" {
-  description = "List of CIDR blocks for the public subnets"
-  type        = list(string)
-}
-
-# Availability Zones
-variable "availability_zones" {
-  description = "List of availability zones to use for the subnets"
-  type        = list(string)
-}
-
 # Environment
 variable "environment" {
   description = "Environment name (e.g., dev, staging, prod)"
